@@ -1,7 +1,5 @@
 import React, { ChangeEvent } from "react";
 
-import moment from "moment";
-
 import icons from "../../../assets/icons";
 
 import Svg from "../../ui/Svg/Svg";
@@ -17,9 +15,18 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
+import AdapterDateFns from "@mui/lab/AdapterDateFns";
+import LocalizationProvider from "@mui/lab/LocalizationProvider";
+import DatePicker from "@mui/lab/DatePicker";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+
+import { IDerivative } from "../../../models/derivatives";
 
 import classes from "./Derivatives.module.scss";
-import { IDerivative } from "../../../models/derivatives";
 
 interface Props {
   readonly iconName?: keyof typeof icons;
@@ -30,6 +37,12 @@ interface Props {
   readonly uploadErrorState: boolean;
   readonly spinnerTimerState?: number;
   readonly openModalState: boolean;
+  readonly dateState: Date | null;
+  readonly setDateState: React.Dispatch<React.SetStateAction<Date | null>>;
+  readonly floorBrokersSelectState: string;
+  readonly floorBrokersSelectChangeHandler: (event: SelectChangeEvent) => void;
+  readonly floorBrokersDataState?: string[];
+  readonly fileNameState: string;
   readonly handleModalOpen: () => void;
   readonly handleModalClose: () => void;
   readonly onUpload: (value: ChangeEvent<HTMLInputElement>) => void;
@@ -204,7 +217,7 @@ const DerivativesView: React.FC<Props> = (
                             onChange={props.onUpload}
                             type="file"
                             accept=".csv"
-                            id="WEX"
+                            name="csv"
                           />
                         </label>
                       </Button>
@@ -222,26 +235,57 @@ const DerivativesView: React.FC<Props> = (
                       </Button>
                     )}
                     <span className={classes["buttonContainer__text"]}>
-                      WEX
+                      {props.fileNameState}
                     </span>
                   </div>
-                  <div className={classes["buttonContainer"]}>
-                    <Button className={classes["buttonContainer__button"]}>
-                      <label>
-                        <Svg className={classes["addFileSvg"]} name="addFile" />
-                        <input
-                          style={{ display: "none" }}
-                          onChange={props.onUpload}
-                          type="file"
-                          accept=".csv"
-                          id={"DRV"}
+                  <div className={classes["selectContainer"]}>
+                    <Box sx={{ minWidth: 260 }}>
+                      <FormControl fullWidth>
+                        <InputLabel id="demo-simple-select-label">
+                          Floor Broker
+                        </InputLabel>
+                        <Select
+                          labelId="demo-simple-select-label"
+                          id="demo-simple-select"
+                          value={props.floorBrokersSelectState}
+                          label="Floor Broker"
+                          onChange={props.floorBrokersSelectChangeHandler}
+                        >
+                          {props.floorBrokersDataState?.map((name) => {
+                            <React.Fragment>
+                              <MenuItem value={"a"}>{name}</MenuItem>
+                            </React.Fragment>;
+                          })}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <LocalizationProvider dateAdapter={AdapterDateFns}>
+                      <Box m={2}>
+                        <DatePicker
+                          inputFormat="yyyy-MM"
+                          views={["year", "month"]}
+                          label="Year and Month"
+                          minDate={new Date("2021-01")}
+                          maxDate={new Date()}
+                          value={props.dateState}
+                          onChange={props.setDateState}
+                          renderInput={(params) => (
+                            <TextField
+                              style={{ border: "red" }}
+                              {...params}
+                              helperText={null}
+                            />
+                          )}
                         />
-                      </label>
-                    </Button>
-                    <span className={classes["buttonContainer__text"]}>
-                      DRV
-                    </span>
+                      </Box>
+                    </LocalizationProvider>
                   </div>
+                  <button
+                    style={{ width: 100, height: 100 }}
+                    onSubmit={props.onSubmit}
+                  >
+                    Submit Temp
+                  </button>
                 </form>
               ) : (
                 <div className={classes["uploadFilesContainer__error"]}>

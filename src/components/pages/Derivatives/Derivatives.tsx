@@ -1,14 +1,17 @@
 import React, { ChangeEvent, useEffect, useState } from "react";
 
-import { AxiosResponse, AxiosError } from "axios";
+import axios, { AxiosResponse, AxiosError } from "axios";
 
 import { backendAPIAxios } from "../../../utils/http";
+
+import { SelectChangeEvent } from "@mui/material";
 
 import { IDerivative } from "../../../models/derivatives";
 
 import {
   IGetDerivativeResponse,
   IGetDerivativesResponse,
+  IGetFloorBrokersResponse,
 } from "../../../models/response";
 import { IServerResponseData } from "../../../models/shared/response";
 
@@ -23,6 +26,7 @@ interface Props {
 const Derivatives: React.FC<Props> = (
   props: React.PropsWithChildren<Props>
 ) => {
+  const [dateState, setDateState] = useState<Date | null>(new Date());
   const [derivativesState, setDerivativesState] = useState<
     IDerivative[] | undefined
   >(undefined);
@@ -33,12 +37,32 @@ const Derivatives: React.FC<Props> = (
   const [spinnerState, setSpinnerState] = useState<boolean>(false);
   const [uploadErrorState, setUploadErrorState] = useState<boolean>(false);
   const [openModalState, setOpenModalState] = useState<boolean>(false);
-  const [CSVFilesState, setCSVFilesState] = useState<
-    { id: string; file: string | ArrayBuffer | null }[]
+  const [CSVFileState, setCSVFileState] = useState<unknown>("");
+  const [fileNameState, setFileNameState] = useState<string>("");
+
+  const [floorBrokersDataState, setFloorBrokersDataState] = useState<
+    string[] | undefined
   >([]);
+  const [floorBrokersSelectState, setFloorBrokersSelectState] =
+    useState<string>("");
+
+  const floorBrokersStateChangeHandler = (event: SelectChangeEvent) => {
+    setFloorBrokersSelectState(event.target.value as string);
+  };
 
   const handleModalOpen = () => setOpenModalState(true);
   const handleModalClose = () => setOpenModalState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response: AxiosResponse<IGetFloorBrokersResponse[]> = await axios(
+        "https://api.makor-x.com/reconciliation/drv_trade_floor_broker?api_key=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY3Rpb24iOiJyZWNvbmNpbGlhdGlvbiIsIm5hbWUiOiJEYW5pZWwgQmFyIn0.2hHZpM1gUw8UYUnZuczl1Jqx4ht6_UbhWosncUC67xc"
+      );
+
+      setFloorBrokersDataState(response.data.map((name) => name.name));
+    };
+    fetchData();
+  }, [floorBrokersDataState]);
 
   useEffect(() => {
     getDerivatives();
@@ -82,37 +106,53 @@ const Derivatives: React.FC<Props> = (
       });
   };
 
-  const onUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault();
-
-    const id = event.target.id;
-    const fileReader = new FileReader();
-    const file = event.target.files![0];
-
-    fileReader.onload = () => {
-      setCSVFilesState([...CSVFilesState, { id, file: fileReader.result }]);
-    };
-
-    fileReader.readAsDataURL(file);
-
-    setWEXState(() => true);
+  const convertBase64 = (file: File) => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
   };
 
-  useEffect(() => {
-    if (CSVFilesState.length === 2) {
-      onSubmit();
+  const onUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+
+    const file = event.target.files![0];
+
+    if (!file) {
+      console.log("error uploading file");
     }
-  }, [CSVFilesState]);
+
+    const base64 = await convertBase64(file);
+
+    setCSVFileState(() => base64);
+
+    setFileNameState(() => file.name);
+    setWEXState(() => true);
+  };
 
   const onSubmit = () => {
     setSpinnerState(() => true);
 
     backendAPIAxios
-      .post("/derivatives", CSVFilesState, {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token") ?? ""}`,
+      .post(
+        "/derivatives",
+        {
+          file: CSVFileState,
+          date: dateState,
+          floorBrokers: floorBrokersSelectState,
         },
-      })
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token") ?? ""}`,
+          },
+        }
+      )
       .then((response: AxiosResponse<IServerResponseData>) => {
         if (!response.data) {
           return console.log("Failed to upload CSV");
@@ -133,7 +173,7 @@ const Derivatives: React.FC<Props> = (
       .finally(() => {
         setSpinnerState(() => false);
         setWEXState(() => false);
-        setCSVFilesState(() => []);
+        setCSVFileState(() => undefined);
       });
   };
 
@@ -167,8 +207,14 @@ const Derivatives: React.FC<Props> = (
       spinnerState={spinnerState}
       uploadErrorState={uploadErrorState}
       openModalState={openModalState}
+      dateState={dateState}
+      setDateState={setDateState}
       handleModalOpen={handleModalOpen}
       handleModalClose={handleModalClose}
+      floorBrokersSelectState={floorBrokersSelectState}
+      floorBrokersDataState={floorBrokersDataState}
+      floorBrokersSelectChangeHandler={floorBrokersStateChangeHandler}
+      fileNameState={fileNameState}
       onUpload={onUpload}
       onSubmit={onSubmit}
       onDownload={onDownload}
@@ -182,3 +228,6 @@ Derivatives.displayName = "Derivatives";
 Derivatives.defaultProps = {};
 
 export default Derivatives;
+function componentDidMount() {
+  throw new Error("Function not implemented.");
+}

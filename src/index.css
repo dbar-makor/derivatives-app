@@ -50,3 +50,27 @@ code {
 .css-1ex1afd-MuiTableCell-root {
   padding: 5px !important;
 }
+
+.css-9ddj71-MuiInputBase-root-MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: #3e2f71 !important;
+}
+
+.css-1kty9di-MuiFormLabel-root-MuiInputLabel-root.Mui-focused {
+  color: #3e2f71 !important;
+}
+
+.css-o9k5xi-MuiInputBase-root-MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: #3e2f71 !important;
+}
+
+.css-m1gykc.Mui-selected {
+  color: #fff;
+  background-color: #3e2f71 !important;
+}
+
+.css-1yy0aak-MuiTypography-root.Mui-selected {
+  color: #fff;
+  background-color: #3e2f71 !important;
+}

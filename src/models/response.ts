@@ -36,3 +36,9 @@ export interface ILoginResponse extends IServerResponseData {
     username: string;
   }>;
 }
+
+export interface IGetFloorBrokersResponse {
+  readonly id: number;
+  readonly name: string;
+  readonly company: string;
+}

@@ -120,6 +120,13 @@ body {
         color: #3e2f71;
       }
     }
+
+    .selectContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
   }
 
   &__error {
