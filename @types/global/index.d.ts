@@ -6,7 +6,8 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       readonly REACT_APP_API_PATH: string;
-      readonly MAKOR_X_API_KEY: string;
+      readonly REACT_APP_MAKOR_X_URL: string;
+      readonly REACT_APP_MAKOR_X_API_KEY: string;
     }
   }
 

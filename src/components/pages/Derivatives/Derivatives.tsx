@@ -41,10 +41,12 @@ const Derivatives: React.FC<Props> = (
   const [fileNameState, setFileNameState] = useState<string>("");
 
   const [floorBrokersDataState, setFloorBrokersDataState] = useState<
-    string[] | undefined
+    IGetFloorBrokersResponse[] | undefined
   >([]);
   const [floorBrokersSelectState, setFloorBrokersSelectState] =
     useState<string>("");
+  const [disableFloorBrokersSelectState, setdisableFloorBrokersSelectState] =
+    useState<boolean>(true);
 
   const floorBrokersStateChangeHandler = (event: SelectChangeEvent) => {
     setFloorBrokersSelectState(event.target.value as string);
@@ -54,19 +56,30 @@ const Derivatives: React.FC<Props> = (
   const handleModalClose = () => setOpenModalState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const response: AxiosResponse<IGetFloorBrokersResponse[]> = await axios(
-        "https://api.makor-x.com/reconciliation/drv_trade_floor_broker?api_key=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY3Rpb24iOiJyZWNvbmNpbGlhdGlvbiIsIm5hbWUiOiJEYW5pZWwgQmFyIn0.2hHZpM1gUw8UYUnZuczl1Jqx4ht6_UbhWosncUC67xc"
-      );
-
-      setFloorBrokersDataState(response.data.map((name) => name.name));
-    };
-    fetchData();
-  }, [floorBrokersDataState]);
-
-  useEffect(() => {
     getDerivatives();
+    getFloorBrokers();
   }, []);
+
+  const getFloorBrokers = async () => {
+    await backendAPIAxios
+      .get(
+        `${process.env.REACT_APP_MAKOR_X_URL}${process.env.REACT_APP_MAKOR_X_API_KEY}`
+      )
+      .then((response: AxiosResponse<IGetFloorBrokersResponse[]>) => {
+        if (!response.data) {
+          return console.log("Failed to upload CSV");
+        }
+
+        if (response.status === 200) {
+          setdisableFloorBrokersSelectState(() => false);
+        }
+
+        setFloorBrokersDataState(() => response.data);
+      })
+      .catch((e: AxiosError) => {
+        console.log(`Failed to upload CSV with error: ${e}`);
+      });
+  };
 
   const getDerivatives = () => {
     backendAPIAxios
@@ -173,7 +186,7 @@ const Derivatives: React.FC<Props> = (
       .finally(() => {
         setSpinnerState(() => false);
         setWEXState(() => false);
-        setCSVFileState(() => undefined);
+        // setCSVFileState(() => undefined);
       });
   };
 
@@ -214,6 +227,7 @@ const Derivatives: React.FC<Props> = (
       floorBrokersSelectState={floorBrokersSelectState}
       floorBrokersDataState={floorBrokersDataState}
       floorBrokersSelectChangeHandler={floorBrokersStateChangeHandler}
+      disableFloorBrokersSelectState={disableFloorBrokersSelectState}
       fileNameState={fileNameState}
       onUpload={onUpload}
       onSubmit={onSubmit}

@@ -27,27 +27,29 @@ import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { IDerivative } from "../../../models/derivatives";
 
 import classes from "./Derivatives.module.scss";
+import { IGetFloorBrokersResponse } from "../../../models/response";
 
 interface Props {
   readonly iconName?: keyof typeof icons;
-  readonly derivativesState?: IDerivative[];
-  readonly derivativeState?: IDerivative;
-  readonly WEXState: boolean;
-  readonly spinnerState: boolean;
-  readonly uploadErrorState: boolean;
-  readonly spinnerTimerState?: number;
-  readonly openModalState: boolean;
-  readonly dateState: Date | null;
   readonly setDateState: React.Dispatch<React.SetStateAction<Date | null>>;
-  readonly floorBrokersSelectState: string;
   readonly floorBrokersSelectChangeHandler: (event: SelectChangeEvent) => void;
-  readonly floorBrokersDataState?: string[];
-  readonly fileNameState: string;
-  readonly handleModalOpen: () => void;
-  readonly handleModalClose: () => void;
   readonly onUpload: (value: ChangeEvent<HTMLInputElement>) => void;
   onSubmit: () => void;
   onDownload: (event: string) => void;
+  readonly handleModalClose: () => void;
+  readonly handleModalOpen: () => void;
+  readonly floorBrokersDataState?: IGetFloorBrokersResponse[];
+  readonly derivativesState?: IDerivative[];
+  readonly derivativeState?: IDerivative;
+  readonly floorBrokersSelectState: string;
+  readonly spinnerTimerState?: number;
+  readonly dateState: Date | null;
+  readonly fileNameState: string;
+  readonly WEXState: boolean;
+  readonly spinnerState: boolean;
+  readonly uploadErrorState: boolean;
+  readonly openModalState: boolean;
+  readonly disableFloorBrokersSelectState: boolean;
 }
 
 const DerivativesView: React.FC<Props> = (
@@ -235,28 +237,43 @@ const DerivativesView: React.FC<Props> = (
                       </Button>
                     )}
                     <span className={classes["buttonContainer__text"]}>
-                      {props.fileNameState}
+                      {!props.fileNameState
+                        ? "File Name"
+                        : props.fileNameState.substring(0, 21)}
                     </span>
                   </div>
                   <div className={classes["selectContainer"]}>
                     <Box sx={{ minWidth: 260 }}>
                       <FormControl fullWidth>
-                        <InputLabel id="demo-simple-select-label">
+                        <InputLabel id="floorBrolersSelectLabel">
                           Floor Broker
                         </InputLabel>
-                        <Select
-                          labelId="demo-simple-select-label"
-                          id="demo-simple-select"
-                          value={props.floorBrokersSelectState}
-                          label="Floor Broker"
-                          onChange={props.floorBrokersSelectChangeHandler}
-                        >
-                          {props.floorBrokersDataState?.map((name) => {
-                            <React.Fragment>
-                              <MenuItem value={"a"}>{name}</MenuItem>
-                            </React.Fragment>;
-                          })}
-                        </Select>
+                        {props.disableFloorBrokersSelectState ? (
+                          <Select
+                            disabled
+                            label="Floor Broker"
+                            defaultValue=""
+                          ></Select>
+                        ) : (
+                          <Select
+                            labelId="floorBrolersSelectLabel"
+                            id="floorBrolersSelect"
+                            defaultValue=""
+                            value={props.floorBrokersSelectState}
+                            label="Floor Broker"
+                            onChange={props.floorBrokersSelectChangeHandler}
+                          >
+                            {props.floorBrokersDataState?.map(
+                              ({ id, name }, index) => {
+                                return (
+                                  <MenuItem key={index} value={id}>
+                                    {name}
+                                  </MenuItem>
+                                );
+                              }
+                            )}
+                          </Select>
+                        )}
                       </FormControl>
                     </Box>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
