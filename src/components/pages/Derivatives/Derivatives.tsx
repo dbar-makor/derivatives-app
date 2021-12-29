@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useEffect, useState } from "react";
 
-import axios, { AxiosResponse, AxiosError } from "axios";
+import { AxiosResponse, AxiosError } from "axios";
 
 import { backendAPIAxios } from "../../../utils/http";
 
@@ -33,32 +33,40 @@ const Derivatives: React.FC<Props> = (
   const [derivativeState, setDerivativeState] = useState<
     IDerivative | undefined
   >(undefined);
+  const [CSVFileState, setCSVFileState] = useState<unknown>("");
+
+  const [fileNameState, setFileNameState] = useState<string>("");
+  const [floorBrokersDataState, setFloorBrokersDataState] = useState<
+    IGetFloorBrokersResponse[] | undefined
+  >([]);
+  const [floorBrokerSelectState, setFloorBrokersSelectState] =
+    useState<string>("");
+
   const [WEXState, setWEXState] = useState<boolean>(false);
   const [spinnerState, setSpinnerState] = useState<boolean>(false);
   const [uploadErrorState, setUploadErrorState] = useState<boolean>(false);
   const [openModalState, setOpenModalState] = useState<boolean>(false);
-  const [CSVFileState, setCSVFileState] = useState<unknown>("");
-  const [fileNameState, setFileNameState] = useState<string>("");
-
-  const [floorBrokersDataState, setFloorBrokersDataState] = useState<
-    IGetFloorBrokersResponse[] | undefined
-  >([]);
-  const [floorBrokersSelectState, setFloorBrokersSelectState] =
-    useState<string>("");
   const [disableFloorBrokersSelectState, setdisableFloorBrokersSelectState] =
     useState<boolean>(true);
-
-  const floorBrokersStateChangeHandler = (event: SelectChangeEvent) => {
-    setFloorBrokersSelectState(event.target.value as string);
-  };
+  const [submitState, setSubmitState] = useState<boolean>(false);
+  const [completeState, setCompleteState] = useState<boolean>(false);
 
   const handleModalOpen = () => setOpenModalState(true);
   const handleModalClose = () => setOpenModalState(false);
+  const floorBrokersStateChangeHandler = (event: SelectChangeEvent) => {
+    setFloorBrokersSelectState(event.target.value as string);
+  };
 
   useEffect(() => {
     getDerivatives();
     getFloorBrokers();
   }, []);
+
+  useEffect(() => {
+    if (CSVFileState && floorBrokerSelectState) {
+      setSubmitState(() => true);
+    }
+  }, [CSVFileState, floorBrokerSelectState]);
 
   const getFloorBrokers = async () => {
     await backendAPIAxios
@@ -67,7 +75,7 @@ const Derivatives: React.FC<Props> = (
       )
       .then((response: AxiosResponse<IGetFloorBrokersResponse[]>) => {
         if (!response.data) {
-          return console.log("Failed to upload CSV");
+          return alert("Failed to upload CSV");
         }
 
         if (response.status === 200) {
@@ -77,7 +85,7 @@ const Derivatives: React.FC<Props> = (
         setFloorBrokersDataState(() => response.data);
       })
       .catch((e: AxiosError) => {
-        console.log(`Failed to upload CSV with error: ${e}`);
+        alert(`Failed to upload CSV with error: ${e}`);
       });
   };
 
@@ -90,13 +98,13 @@ const Derivatives: React.FC<Props> = (
       })
       .then((response: AxiosResponse<IGetDerivativesResponse>) => {
         if (!response.data.data) {
-          return console.log("Failed to upload CSV");
+          return alert("Failed to upload CSV");
         }
 
         setDerivativesState(() => response.data.data);
       })
       .catch((e: AxiosError) => {
-        console.log(`Failed to upload CSV with error: ${e}`);
+        alert(`Failed to upload CSV with error: ${e}`);
       });
   };
 
@@ -109,13 +117,13 @@ const Derivatives: React.FC<Props> = (
       })
       .then((response: AxiosResponse<IGetDerivativeResponse>) => {
         if (!response.data.data) {
-          return console.log("Failed to upload CSV");
+          return alert("Failed to upload CSV");
         }
 
         setDerivativeState(() => response.data.data);
       })
       .catch((e: AxiosError) => {
-        console.log(`Failed to upload CSV with error: ${e}`);
+        alert(`Failed to upload CSV with error: ${e}`);
       });
   };
 
@@ -138,13 +146,16 @@ const Derivatives: React.FC<Props> = (
     const file = event.target.files![0];
 
     if (!file) {
-      console.log("error uploading file");
+      alert("error uploading file");
+    }
+
+    if (file && floorBrokerSelectState) {
+      setSubmitState(() => true);
     }
 
     const base64 = await convertBase64(file);
 
     setCSVFileState(() => base64);
-
     setFileNameState(() => file.name);
     setWEXState(() => true);
   };
@@ -157,8 +168,9 @@ const Derivatives: React.FC<Props> = (
         "/derivatives",
         {
           file: CSVFileState,
+          name: fileNameState,
           date: dateState,
-          floorBrokers: floorBrokersSelectState,
+          floorBroker: floorBrokerSelectState,
         },
         {
           headers: {
@@ -168,16 +180,17 @@ const Derivatives: React.FC<Props> = (
       )
       .then((response: AxiosResponse<IServerResponseData>) => {
         if (!response.data) {
-          return console.log("Failed to upload CSV");
+          return alert("Failed to upload CSV");
         }
 
         if (response.status === 200) {
+          setCompleteState(() => true);
           getDerivatives();
           getDerivative();
         }
       })
       .catch((e: AxiosError) => {
-        console.log(`Failed to upload CSV with error: ${e}`);
+        alert(`Failed to upload CSV with error: ${e}`);
         setUploadErrorState(() => true);
         setTimeout(() => {
           setUploadErrorState(() => false);
@@ -186,11 +199,14 @@ const Derivatives: React.FC<Props> = (
       .finally(() => {
         setSpinnerState(() => false);
         setWEXState(() => false);
-        // setCSVFileState(() => undefined);
+        setCSVFileState(() => undefined);
+        setFloorBrokersSelectState(() => "");
+        setFileNameState(() => "");
+        setSubmitState(() => false);
       });
   };
 
-  const onDownload = (fileName: string) => {
+  const onDownload = async (fileName: string) => {
     backendAPIAxios
       .get("/derivatives/download/" + fileName, {
         responseType: "blob",
@@ -207,7 +223,7 @@ const Derivatives: React.FC<Props> = (
         link.click();
       })
       .catch((e: AxiosError) => {
-        console.log(`Failed to download file with error: ${e}`);
+        alert(`Failed to download file with error: ${e}`);
       });
   };
 
@@ -224,11 +240,13 @@ const Derivatives: React.FC<Props> = (
       setDateState={setDateState}
       handleModalOpen={handleModalOpen}
       handleModalClose={handleModalClose}
-      floorBrokersSelectState={floorBrokersSelectState}
+      floorBrokerSelectState={floorBrokerSelectState}
       floorBrokersDataState={floorBrokersDataState}
       floorBrokersSelectChangeHandler={floorBrokersStateChangeHandler}
       disableFloorBrokersSelectState={disableFloorBrokersSelectState}
       fileNameState={fileNameState}
+      submitState={submitState}
+      completeState={completeState}
       onUpload={onUpload}
       onSubmit={onSubmit}
       onDownload={onDownload}
@@ -242,6 +260,3 @@ Derivatives.displayName = "Derivatives";
 Derivatives.defaultProps = {};
 
 export default Derivatives;
-function componentDidMount() {
-  throw new Error("Function not implemented.");
-}

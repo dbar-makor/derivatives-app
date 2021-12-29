@@ -8,10 +8,9 @@ export interface IGetDerivativesResponse extends IServerResponseData {
     | "date"
     | "username"
     | "wex"
-    | "drv"
-    | "matched"
-    | "unmatched"
-    | "complete"
+    | "matchedCount"
+    | "matchedSumPercentage"
+    | "unmatchedCount"
     | "unresolved"
   >[];
 }
@@ -19,13 +18,18 @@ export interface IGetDerivativesResponse extends IServerResponseData {
 export interface IGetDerivativeResponse extends IServerResponseData {
   readonly data?: Pick<
     IDerivative,
-    | "date"
-    | "username"
     | "wex"
-    | "drv"
-    | "matched"
-    | "unmatched"
-    | "complete"
+    | "fileName"
+    | "username"
+    | "totalCount"
+    | "totalCharge"
+    | "matchedCount"
+    | "matchSumCharge"
+    | "matchedSumPercentage"
+    | "unmatchedCount"
+    | "unmatchedGroupCount"
+    | "unmatchedSumCharge"
+    | "unmatchedSumPercentage"
     | "unresolved"
   >;
 }

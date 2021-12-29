@@ -41,7 +41,7 @@ interface Props {
   readonly floorBrokersDataState?: IGetFloorBrokersResponse[];
   readonly derivativesState?: IDerivative[];
   readonly derivativeState?: IDerivative;
-  readonly floorBrokersSelectState: string;
+  readonly floorBrokerSelectState: string;
   readonly spinnerTimerState?: number;
   readonly dateState: Date | null;
   readonly fileNameState: string;
@@ -50,6 +50,8 @@ interface Props {
   readonly uploadErrorState: boolean;
   readonly openModalState: boolean;
   readonly disableFloorBrokersSelectState: boolean;
+  readonly submitState: boolean;
+  readonly completeState: boolean;
 }
 
 const DerivativesView: React.FC<Props> = (
@@ -61,7 +63,7 @@ const DerivativesView: React.FC<Props> = (
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 780,
-    height: 900,
+    height: 920,
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 4,
@@ -95,12 +97,11 @@ const DerivativesView: React.FC<Props> = (
         >
           <TableHead>
             <TableRow>
-              <TableCell className={classes["tableCellHeader"]}>
+              <TableCell align="center" className={classes["tableCellHeader"]}>
                 Username
               </TableCell>
               <TableCell className={classes["tableCellHeader"]}>Date</TableCell>
               <TableCell className={classes["tableCellHeader"]}>WEX</TableCell>
-              <TableCell className={classes["tableCellHeader"]}>DRV</TableCell>
               <TableCell className={classes["tableCellHeader"]} align="center">
                 Matched
               </TableCell>
@@ -128,7 +129,7 @@ const DerivativesView: React.FC<Props> = (
                   <TableCell style={{ color: "#8a8a8a", fontWeight: 700 }}>
                     {row.date}
                   </TableCell>
-                  <TableCell className={classes["hi"]} align="left">
+                  <TableCell className={classes["hi"]}>
                     <Svg className={classes["attachSvg"]} name="attach" />
                     <button
                       className={classes["downloadButton"]}
@@ -137,35 +138,26 @@ const DerivativesView: React.FC<Props> = (
                       {row.wex}
                     </button>
                   </TableCell>
-                  <TableCell align="left">
-                    <Svg className={classes["attachSvg"]} name="attach" />
-                    <button
-                      className={classes["downloadButton"]}
-                      onClick={() => props.onDownload(row.drv)}
-                    >
-                      {row.drv}
-                    </button>
-                  </TableCell>
                   <TableCell
                     style={{ color: "#238D38", fontWeight: 700 }}
                     align="center"
                   >
-                    {row.matched}
+                    {row.matchedCount}
                   </TableCell>
                   <TableCell
                     style={{ color: "#E59813", fontWeight: 700 }}
                     align="center"
                   >
-                    {row.unmatched}
+                    {row.unmatchedCount}
                   </TableCell>
                   <TableCell
                     style={{ color: "#3E2F71", fontWeight: 700 }}
                     align="center"
                   >
-                    {row.complete === 100 ? (
+                    {row.matchedSumPercentage === 100 ? (
                       <Svg style={{ marginRight: 5 }} name="complete" />
                     ) : (
-                      `${row.complete}%`
+                      `${row.matchedSumPercentage}%`
                     )}
                   </TableCell>
                   <TableCell align="left">
@@ -198,7 +190,7 @@ const DerivativesView: React.FC<Props> = (
                 <span
                   className={classes["uploadFilesContainer__headers--content"]}
                 >
-                  After uploading files processing will start automaticaly
+                  Upload source, choose Floor Broker and Date
                 </span>
               </div>
               {!props.uploadErrorState ? (
@@ -259,14 +251,14 @@ const DerivativesView: React.FC<Props> = (
                             labelId="floorBrolersSelectLabel"
                             id="floorBrolersSelect"
                             defaultValue=""
-                            value={props.floorBrokersSelectState}
+                            value={props.floorBrokerSelectState}
                             label="Floor Broker"
                             onChange={props.floorBrokersSelectChangeHandler}
                           >
                             {props.floorBrokersDataState?.map(
-                              ({ id, name }, index) => {
+                              ({ name }, index) => {
                                 return (
-                                  <MenuItem key={index} value={id}>
+                                  <MenuItem key={index} value={name}>
                                     {name}
                                   </MenuItem>
                                 );
@@ -296,13 +288,23 @@ const DerivativesView: React.FC<Props> = (
                         />
                       </Box>
                     </LocalizationProvider>
+                    {props.submitState ? (
+                      <Button
+                        className={classes["submitReconciliation"]}
+                        type="submit"
+                        onSubmit={props.onSubmit}
+                      >
+                        Submit
+                      </Button>
+                    ) : (
+                      <Button
+                        className={classes["submitReconciliationDisabled"]}
+                        disabled
+                      >
+                        Submit
+                      </Button>
+                    )}
                   </div>
-                  <button
-                    style={{ width: 100, height: 100 }}
-                    onSubmit={props.onSubmit}
-                  >
-                    Submit Temp
-                  </button>
                 </form>
               ) : (
                 <div className={classes["uploadFilesContainer__error"]}>
@@ -328,7 +330,7 @@ const DerivativesView: React.FC<Props> = (
               <span
                 className={classes["derivativesContainer__headers--content"]}
               >
-                Summary of Matched and Unmatched rows
+                Summary after reconciliation
               </span>
             </div>
             <div className={classes["derivativesTableContainer"]}>
@@ -339,14 +341,69 @@ const DerivativesView: React.FC<Props> = (
                       classes["derivativesTableContainer__text--matchedRows"]
                     }
                   >
-                    Matched Rows
+                    Name
                   </div>
                   <div
                     className={
-                      classes["derivativesTableContainer__text--unmatchedRows"]
+                      classes["derivativesTableContainer__text--matchedRows"]
                     }
                   >
-                    Unmatched Rows
+                    Total Count
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                  >
+                    Total Charge
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#238d38" }}
+                  >
+                    Match Count
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#238d38" }}
+                  >
+                    Matched Sum Charge
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    Unmatched Count
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    Unmatched Group Count
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    Unmatched Sum Charge
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__text--matchedRows"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    Unmatch Charge Percentage
                   </div>
                 </div>
                 <div className={classes["derivativesTableContainer__data"]}>
@@ -355,51 +412,91 @@ const DerivativesView: React.FC<Props> = (
                       classes["derivativesTableContainer__data--number"]
                     }
                   >
-                    {!props.spinnerState ? (
-                      <React.Fragment>
-                        {!props.derivativeState?.matched
-                          ? "0"
-                          : props.derivativeState?.matched}
-                      </React.Fragment>
-                    ) : (
-                      <div className={classes["uploadFilesSpinnerContainer"]}>
-                        <CircularProgress
-                          style={{ color: "#3E2F72" }}
-                          size={27.7}
-                        />
-                      </div>
-                    )}
+                    {!props.derivativeState?.fileName
+                      ? "-"
+                      : props.derivativeState.fileName}
                   </div>
                   <div
                     className={
                       classes["derivativesTableContainer__data--number"]
                     }
                   >
-                    {!props.spinnerState ? (
-                      <React.Fragment>
-                        {!props.derivativeState?.unmatched
-                          ? "0"
-                          : props.derivativeState?.unmatched}
-                      </React.Fragment>
-                    ) : (
-                      <div className={classes["uploadFilesSpinnerContainer"]}>
-                        <CircularProgress
-                          style={{ color: "#3E2F72" }}
-                          size={27.7}
-                        />
-                      </div>
-                    )}
+                    {!props.derivativeState?.totalCount
+                      ? "0"
+                      : props.derivativeState.totalCount}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                  >
+                    {!props.derivativeState?.totalCharge
+                      ? "0"
+                      : props.derivativeState.totalCharge}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#238d38" }}
+                  >
+                    {!props.derivativeState?.matchedCount
+                      ? "0"
+                      : props.derivativeState.matchedCount}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#238d38" }}
+                  >
+                    {!props.derivativeState?.matchSumCharge
+                      ? "0"
+                      : props.derivativeState.matchSumCharge}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    {!props.derivativeState?.unmatchedCount
+                      ? "0"
+                      : props.derivativeState.unmatchedCount}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    {!props.derivativeState?.unmatchedGroupCount
+                      ? "0"
+                      : props.derivativeState.unmatchedGroupCount}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    {!props.derivativeState?.unmatchedSumCharge
+                      ? "0"
+                      : props.derivativeState.unmatchedSumCharge}
+                  </div>
+                  <div
+                    className={
+                      classes["derivativesTableContainer__data--number"]
+                    }
+                    style={{ color: "#e59813" }}
+                  >
+                    {!props.derivativeState?.unmatchedSumPercentage
+                      ? "0"
+                      : `${props.derivativeState.unmatchedSumPercentage}%`}
                   </div>
                 </div>
               </div>
               <div className={classes["derivativesTableContainer__calculator"]}>
-                <div
-                  className={
-                    classes["derivativesTableContainer__calculator--text"]
-                  }
-                >
-                  Complete
-                </div>
                 <div
                   className={
                     classes["derivativesTableContainer__calculator--percentage"]
@@ -407,16 +504,32 @@ const DerivativesView: React.FC<Props> = (
                 >
                   {!props.spinnerState ? (
                     <React.Fragment>
-                      {!props.derivativeState?.complete
-                        ? "0%"
-                        : +props.derivativeState?.complete + "%"}
+                      <div style={{ marginLeft: 56 }}>
+                        {!props.derivativeState?.matchedSumPercentage
+                          ? "-"
+                          : +props.derivativeState.matchedSumPercentage + "%"}
+                      </div>
+                      <div
+                        className={
+                          classes["derivativesTableContainer__calculator--text"]
+                        }
+                      >
+                        {!props.completeState ? "Complete" : "Completed"}
+                      </div>
                     </React.Fragment>
                   ) : (
                     <div className={classes["uploadFilesSpinnerContainer"]}>
                       <CircularProgress
                         style={{ color: "#3E2F72", marginTop: 15 }}
-                        size={50}
+                        size={60}
                       />
+                      <div
+                        className={
+                          classes["derivativesTableContainer__calculator--text"]
+                        }
+                      >
+                        Processing
+                      </div>
                     </div>
                   )}
                 </div>
