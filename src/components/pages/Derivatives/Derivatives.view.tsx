@@ -2,6 +2,9 @@ import React, { ChangeEvent } from "react";
 
 import icons from "../../../assets/icons";
 
+import { groupByCompany } from "../../../utils/derivatives";
+import { IDerivative, IFloorBroker } from "../../../models/derivatives";
+
 import Svg from "../../ui/Svg/Svg";
 
 import Box from "@mui/material/Box";
@@ -23,11 +26,10 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
-
-import { IDerivative } from "../../../models/derivatives";
+import ListSubheader from "@mui/material/ListSubheader";
+import LinearProgress from "@mui/material/LinearProgress";
 
 import classes from "./Derivatives.module.scss";
-import { IGetFloorBrokersResponse } from "../../../models/response";
 
 interface Props {
   readonly iconName?: keyof typeof icons;
@@ -38,7 +40,7 @@ interface Props {
   onDownload: (event: string) => void;
   readonly handleModalClose: () => void;
   readonly handleModalOpen: () => void;
-  readonly floorBrokersDataState?: IGetFloorBrokersResponse[];
+  readonly floorBrokersDataState?: IFloorBroker[];
   readonly derivativesState?: IDerivative[];
   readonly derivativeState?: IDerivative;
   readonly floorBrokerSelectState: string;
@@ -51,7 +53,6 @@ interface Props {
   readonly openModalState: boolean;
   readonly disableFloorBrokersSelectState: boolean;
   readonly submitState: boolean;
-  readonly completeState: boolean;
 }
 
 const DerivativesView: React.FC<Props> = (
@@ -63,7 +64,7 @@ const DerivativesView: React.FC<Props> = (
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 780,
-    height: 920,
+    height: 900,
     bgcolor: "background.paper",
     boxShadow: 24,
     p: 4,
@@ -179,20 +180,14 @@ const DerivativesView: React.FC<Props> = (
           <span className={classes["modalHeader"]}>
             Derivatives reconciliation
           </span>
+          <div className={classes["headers"]}>
+            <span className={classes["headers__header"]}>1. Upload Files</span>
+            <span className={classes["headers__content"]}>
+              Upload source, choose Floor Broker and Date
+            </span>
+          </div>
           {!props.spinnerState ? (
             <div className={classes["uploadFilesContainer"]}>
-              <div className={classes["uploadFilesContainer__headers"]}>
-                <span
-                  className={classes["uploadFilesContainer__headers--header"]}
-                >
-                  1. Upload Files
-                </span>
-                <span
-                  className={classes["uploadFilesContainer__headers--content"]}
-                >
-                  Upload source, choose Floor Broker and Date
-                </span>
-              </div>
               {!props.uploadErrorState ? (
                 <form
                   className={classes["uploadFilesContainer__form"]}
@@ -255,13 +250,19 @@ const DerivativesView: React.FC<Props> = (
                             label="Floor Broker"
                             onChange={props.floorBrokersSelectChangeHandler}
                           >
-                            {props.floorBrokersDataState?.map(
-                              ({ name }, index) => {
-                                return (
-                                  <MenuItem key={index} value={name}>
-                                    {name}
-                                  </MenuItem>
+                            {groupByCompany(props.floorBrokersDataState!).map(
+                              ([company, list]) => {
+                                const subItems: IFloorBroker[] = list.map(
+                                  (element: IFloorBroker) => (
+                                    <MenuItem value={element.id}>
+                                      {element.name}
+                                    </MenuItem>
+                                  )
                                 );
+                                return [
+                                  <ListSubheader>{company}</ListSubheader>,
+                                  ...subItems,
+                                ];
                               }
                             )}
                           </Select>
@@ -315,11 +316,12 @@ const DerivativesView: React.FC<Props> = (
           ) : (
             <div className={classes["uploadFilesSpinnerContainer"]}>
               <CircularProgress
-                style={{ color: "#3E2F72", padding: 68 }}
+                style={{ color: "#3E2F72", padding: 30 }}
                 size={150}
               />
             </div>
           )}
+
           <div className={classes["derivativesContainer"]}>
             <div className={classes["derivativesContainer__headers"]}>
               <span
@@ -504,25 +506,23 @@ const DerivativesView: React.FC<Props> = (
                 >
                   {!props.spinnerState ? (
                     <React.Fragment>
-                      <div style={{ marginLeft: 56 }}>
-                        {!props.derivativeState?.matchedSumPercentage
-                          ? "-"
-                          : +props.derivativeState.matchedSumPercentage + "%"}
-                      </div>
+                      {!props.derivativeState?.matchedSumPercentage ? (
+                        <span>-</span>
+                      ) : (
+                        <div>
+                          {+props.derivativeState.matchedSumPercentage + "%"}
+                        </div>
+                      )}
                       <div
                         className={
                           classes["derivativesTableContainer__calculator--text"]
                         }
                       >
-                        {!props.completeState ? "Complete" : "Completed"}
+                        Completed
                       </div>
                     </React.Fragment>
                   ) : (
                     <div className={classes["uploadFilesSpinnerContainer"]}>
-                      <CircularProgress
-                        style={{ color: "#3E2F72", marginTop: 15 }}
-                        size={60}
-                      />
                       <div
                         className={
                           classes["derivativesTableContainer__calculator--text"]
@@ -530,6 +530,9 @@ const DerivativesView: React.FC<Props> = (
                       >
                         Processing
                       </div>
+                      <Box sx={{ width: "95%", marginTop: 1 }}>
+                        <LinearProgress color="inherit" />
+                      </Box>
                     </div>
                   )}
                 </div>

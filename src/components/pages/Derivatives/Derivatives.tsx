@@ -6,6 +6,7 @@ import { backendAPIAxios } from "../../../utils/http";
 
 import { SelectChangeEvent } from "@mui/material";
 
+import { convertBase64 } from "../../../utils/derivatives";
 import { IDerivative } from "../../../models/derivatives";
 
 import {
@@ -49,7 +50,6 @@ const Derivatives: React.FC<Props> = (
   const [disableFloorBrokersSelectState, setdisableFloorBrokersSelectState] =
     useState<boolean>(true);
   const [submitState, setSubmitState] = useState<boolean>(false);
-  const [completeState, setCompleteState] = useState<boolean>(false);
 
   const handleModalOpen = () => setOpenModalState(true);
   const handleModalClose = () => setOpenModalState(false);
@@ -127,19 +127,6 @@ const Derivatives: React.FC<Props> = (
       });
   };
 
-  const convertBase64 = (file: File) => {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
-  };
-
   const onUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     event.preventDefault();
 
@@ -163,6 +150,10 @@ const Derivatives: React.FC<Props> = (
   const onSubmit = () => {
     setSpinnerState(() => true);
 
+    if (derivativeState) {
+      setDerivativeState(() => undefined);
+    }
+
     backendAPIAxios
       .post(
         "/derivatives",
@@ -170,7 +161,7 @@ const Derivatives: React.FC<Props> = (
           file: CSVFileState,
           name: fileNameState,
           date: dateState,
-          floorBroker: floorBrokerSelectState,
+          floorBrokerID: floorBrokerSelectState,
         },
         {
           headers: {
@@ -184,7 +175,6 @@ const Derivatives: React.FC<Props> = (
         }
 
         if (response.status === 200) {
-          setCompleteState(() => true);
           getDerivatives();
           getDerivative();
         }
@@ -246,7 +236,6 @@ const Derivatives: React.FC<Props> = (
       disableFloorBrokersSelectState={disableFloorBrokersSelectState}
       fileNameState={fileNameState}
       submitState={submitState}
-      completeState={completeState}
       onUpload={onUpload}
       onSubmit={onSubmit}
       onDownload={onDownload}

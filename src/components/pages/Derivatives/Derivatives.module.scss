@@ -58,26 +58,25 @@ body {
   }
 }
 
+.headers {
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #222246;
+  }
+
+  &__content {
+    margin-top: 3px;
+    color: #8a8a8a;
+  }
+}
+
 .uploadFilesContainer {
   display: flex;
   flex-direction: column;
-  margin-top: 25px;
-
-  &__headers {
-    display: flex;
-    flex-direction: column;
-
-    &--header {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #222246;
-    }
-
-    &--content {
-      margin-top: 3px;
-      color: #8a8a8a;
-    }
-  }
 
   &__form {
     display: flex;
@@ -160,7 +159,8 @@ body {
 
 .uploadFilesSpinnerContainer {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .derivativesContainer {
@@ -247,6 +247,10 @@ body {
     }
 
     &--percentage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       margin-left: 10px;
       font-size: 3.5rem;
       color: #3e2f71;
@@ -296,7 +300,7 @@ body {
     &--download {
       position: absolute;
       left: 750px;
-      bottom: 64px;
+      bottom: 70px;
       height: 2.4vh;
       width: 2.4vh;
     }
